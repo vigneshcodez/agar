@@ -1,0 +1,11 @@
+<!-- extending base -->
+{% extends 'base/app_base.html' %}
+<!-- title block for html page -->
+{% block title %}
+{% endblock title %}
+<!-- metatags block for html page -->
+{% block metatags %}
+{% endblock metatags %}
+<!-- content block for html page -->
+{% block content %}
+{% endblock content %}
