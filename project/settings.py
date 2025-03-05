@@ -40,7 +40,14 @@ INSTALLED_APPS = [
 ]
 
 CUSTOM_APPS = [
-    'app'
+
+    # Third-party apps
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    # Custom app
+    'accounts',
+    'app',
 ]
 
 INSTALLED_APPS = INSTALLED_APPS + CUSTOM_APPS 
@@ -53,6 +60,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware'
 ]
 
 ROOT_URLCONF = 'project.urls'
@@ -136,3 +144,31 @@ MEDIA_URL = '/media/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+
+
+SITE_ID = 1
+
+# Login settings
+ACCOUNT_LOGIN_METHODS = {'email'}
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # Requires email verification
+
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/accounts/login/'
+
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'zapsoftek@gmail.com'
+EMAIL_HOST_PASSWORD = 'wqdyngpamlhqcvwl'
+
+# wqdy ngpa mlhq cvwl
+
