@@ -1,100 +1,217 @@
-from django.contrib.auth import get_user_model, login, logout
+import random
+from django.core.mail import send_mail
 from django.shortcuts import render, redirect
-from django.contrib.sites.shortcuts import get_current_site
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.utils.encoding import force_bytes, force_str
-from django.template.loader import render_to_string
-from django.contrib.auth.tokens import default_token_generator
-from django.core.mail import EmailMessage
+from django.contrib.auth import login
+from django.contrib import messages
+from .forms import RegisterForm, VerificationForm
+from .models import EmailVerification,PasswordResetToken
+from django.contrib.auth.models import User
+from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 
-User = get_user_model()
 
-def register(request):
-    if request.method == "POST":
-        email = request.POST["email"]
-        username = request.POST.get("username")  
-        password = request.POST.get("password")
 
-        user = User.objects.create_user(username=username, email=email, password=password,is_active=False)  
+def register_view(request):
+    if request.method == 'POST':
+        first_name = request.POST.get('first_name')
+        last_name = request.POST.get('last_name')
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        confirm_password = request.POST.get('confirm_password')
 
-        # Email Verification
-        current_site = get_current_site(request)
-        mail_subject = "Activate your account"
-        message = render_to_string('accounts_templates/email_verification.html', {
-            'user': user,
-            'domain': current_site.domain,
-            'uid': urlsafe_base64_encode(force_bytes(user.pk)),
-            'token': default_token_generator.make_token(user),
-        })
-        email_message = EmailMessage(mail_subject, message, to=[email])
-        email_message.send()
+        # Validate passwords
+        if password != confirm_password:
+            messages.error(request, "Passwords do not match.")
+            return redirect('register')
 
-        messages.success(request, "Please confirm your email to complete registration.")
-        return redirect("login")
+        # Check if email is already in use
+        if User.objects.filter(email=email).exists():
+            messages.error(request, "An account with this email already exists.")
+            return redirect('register')
 
-    return render(request, "accounts_templates/register.html")
-
-def activate(request, uidb64, token):
-    try:
-        uid = force_str(urlsafe_base64_decode(uidb64))
-        user = User.objects.get(pk=uid)
-    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-        user = None
-
-    if user and default_token_generator.check_token(user, token):
-        user.is_active = True
+        # Create the user with email as username
+        user = User(
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            username=email,  # Use email as the username
+            is_active=False  # User is inactive until email verification
+        )
+        user.set_password(password)  # Hash the password
         user.save()
-        messages.success(request, "Your account has been activated!")
-        return redirect("login")
-    else:
-        messages.error(request, "Invalid activation link.")
-        return redirect("register")
 
-from django.contrib.auth import authenticate, login, logout
+        # Generate email verification code
+        verification_code = f"{random.randint(100000, 999999)}"
+        EmailVerification.objects.create(user=user, code=verification_code)
 
-def user_login(request):
-    if request.method == "POST":
-        email = request.POST["email"]
-        password = request.POST["password"]
-        user = authenticate(request, email=email, password=password)
+        # Send verification email
+        send_mail(
+            'Verify Your Email',
+            f'Your verification code is {verification_code}. It expires in 10 minutes.',
+            'no-reply@example.com',  # Replace with your email
+            [email],
+            fail_silently=False,
+        )
 
-        if user is not None:
+        messages.success(request, "Registration successful! Please check your email for the verification code.")
+        return redirect('verify_email', user_id=user.id)
+
+    return render(request, 'accounts/pages/register.html')
+
+def verify_email_view(request, user_id):
+    try:
+        user = User.objects.get(pk=user_id)
+    except User.DoesNotExist:
+        messages.error(request, "User not found.")
+        return redirect('register')
+
+    if request.method == 'POST':
+        code = request.POST.get('code')
+        try:
+            verification = EmailVerification.objects.get(user=user, code=code)
+            if verification.is_expired():
+                messages.error(request, "The verification code has expired. Please register again.")
+                user.delete()  # Remove the unverified user
+                return redirect('register')
+
+            # Mark email as verified and activate user
+            verification.verified = True
+            verification.save()
+            user.is_active = True
+            user.save()
+
             login(request, user)
-            return redirect("home")
+            messages.success(request, "Email verified successfully! You are now logged in.")
+            return redirect('index')
+        except EmailVerification.DoesNotExist:
+            messages.error(request, "Invalid verification code.")
+    form = VerificationForm()
+    return render(request, 'accounts/pages/verify_email.html', {'user': user, 'form': form})
+
+
+
+def login_view(request):
+    if request.method == 'POST':
+        email = request.POST.get('email')  # Collect email from form
+        password = request.POST.get('password')  # Collect password from form
+
+        # Try to fetch user using email as username
+        user = User.objects.filter(email=email).first()
+
+        if user:
+            # Authenticate using the actual username
+            user = authenticate(request, username=user.username, password=password)
         else:
-            messages.error(request, "Invalid credentials.")
-    
-    return render(request, "accounts_templates/login.html")
+            # For CLI-created superusers where email isn't set, try directly
+            user = authenticate(request, username=email, password=password)
 
-def user_logout(request):
-    logout(request)
-    return redirect("login")
+        if user:
+            # Check if user is active
+            if not user.is_active:
+                messages.error(request, "Your account is inactive. Please verify your email.")
+                return redirect('login')
 
-from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm
+            # Check if email verification is required
+            email_verification = EmailVerification.objects.filter(user=user).first()
+            if email_verification and not email_verification.verified:
+                messages.error(request, "Your email is not verified. Please verify it.")
+                return redirect('verify_email', user_id=user.id)
 
-def password_reset_request(request):
-    if request.method == "POST":
-        form = PasswordResetForm(request.POST)
-        if form.is_valid():
-            form.save(
-                request=request,
-                email_template_name="accounts_templates/password_reset_email.html",
+            # Log the user in
+            login(request, user)
+            messages.success(request, f"Welcome back, {user.first_name}!")
+            return redirect('index')  # Redirect to your homepage or dashboard
+
+        else:
+            messages.error(request, "Invalid email or password.")
+            return redirect('login')
+
+    return render(request, 'accounts/pages/login.html')
+
+
+# Step 1: Request Password Reset
+def password_reset_request_view(request):
+    if request.method == 'POST':
+        email = request.POST.get('email')  # Get email from the form
+        try:
+            user = User.objects.get(email=email)  # Fetch the user by email
+            token = f"{random.randint(100000, 999999)}"  # Generate a 6-digit token
+            PasswordResetToken.objects.update_or_create(user=user, defaults={'token': token})
+
+            # Send the reset token via email
+            send_mail(
+                'Password Reset Request',
+                f'Your password reset code is {token}. It expires in 10 minutes.',
+                'no-reply@example.com',  # Replace with your email
+                [email],
+                fail_silently=False,
             )
-            messages.success(request, "Check your email for the reset link.")
-            return redirect("login")
-    else:
-        form = PasswordResetForm()
-    return render(request, "accounts_templates/password_reset.html", {"form": form})
+            messages.success(request, 'A password reset code has been sent to your email.')
+            return redirect('password_reset_verify')  # Redirect to token verification page
+        except User.DoesNotExist:
+            messages.error(request, 'No user found with this email.')  # Email not registered
+    return render(request, 'accounts/pages/password_reset_request.html')
 
-def password_reset_confirm(request, uidb64, token):
-    if request.method == "POST":
-        form = SetPasswordForm(request.user, request.POST)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Password reset successful. You can now log in.")
-            return redirect("login")
-    else:
-        form = SetPasswordForm(request.user)
-    return render(request, "accounts_templates/password_reset_confirm.html", {"form": form})
+# Step 2: Verify OTP
+def password_reset_verify_view(request):
+    if request.method == 'POST':
+        email = request.POST.get('email')  # Collect email
+        token = request.POST.get('token')  # Collect token
+        try:
+            user = User.objects.get(email=email)  # Get user by email
+            reset_token = PasswordResetToken.objects.get(user=user, token=token)
+            
+            print("Token creation time:", reset_token.created_at)
+            # print("Current time:", now())
+            print("Token expiration status:", reset_token.is_expired())
 
+            if reset_token.is_expired():
+                messages.error(request, 'The reset code has expired. Please try again.')
+                return redirect('password_reset_request')
+
+            messages.success(request, 'Token verified successfully. Please reset your password.')
+            return redirect('password_reset_form', user_id=user.id)
+        except (User.DoesNotExist, PasswordResetToken.DoesNotExist):
+            messages.error(request, 'Invalid token or email.')
+    return render(request, 'accounts/pages/password_reset_verify.html')
+
+# Step 3: Reset Password
+def password_reset_form_view(request, user_id):
+    try:
+        user = User.objects.get(pk=user_id)  # Get the user by ID
+    except User.DoesNotExist:
+        messages.error(request, "Invalid user.")
+        return redirect('password_reset_request')
+
+    if request.method == 'POST':
+        password = request.POST.get('password')  # New password
+        confirm_password = request.POST.get('confirm_password')  # Confirmation password
+
+        print("Received password:", password)
+        print("Confirm password:", confirm_password)
+
+        if password != confirm_password:  # Check if passwords match
+            messages.error(request, 'Passwords do not match.')
+            return redirect('password_reset_form', user_id=user.id)
+
+        try:
+            user.set_password(password)  # Properly hash and save the new password
+            user.save()
+            print("Password reset successfully for user:", user.username)
+        except Exception as e:
+            print("Error while resetting password:", e)
+            messages.error(request, "An error occurred while resetting your password.")
+            return redirect('password_reset_form', user_id=user.id)
+
+        PasswordResetToken.objects.filter(user=user).delete()  # Clean up token
+        messages.success(request, 'Your password has been reset successfully. Please log in.')
+        return redirect('login')  # Redirect to login page
+
+    return render(request, 'accounts/pages/password_reset_form.html')
+
+
+def logout_view(request):
+    logout(request)  # Logs out the user
+    messages.success(request, "You have been logged out successfully.")  # Success message
+    return redirect('login')  # Redirect to login page

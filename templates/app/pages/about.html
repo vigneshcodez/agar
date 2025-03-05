@@ -1,16 +1,13 @@
 <!-- extending base -->
-{% extends 'base/app_base.html' %}
+{% extends 'app/base/base.html' %}
 <!-- title block for html page -->
 {% block title %}
-<title>home page</title>
+<title>about page</title>
 {% endblock title %}
 <!-- metatags block for html page -->
 {% block metatags %}
 {% endblock metatags %}
 <!-- content block for html page -->
 {% block content %}
-<h1 class="text-3xl bg-[yellow] p-[50px]">this is index page</h1>
-<h1>Welcome, {{ user.email }}!</h1>
-<a href="{% url 'logout' %}">Logout</a>
+<h2>about page</h2>
 {% endblock content %}
-

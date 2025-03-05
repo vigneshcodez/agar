@@ -5,9 +5,9 @@ from django.contrib.auth.decorators import login_required
 
 @login_required(login_url='login')
 def index(request):
-    return render(request,'app_templates/index.html')
+    return render(request,'app/pages/index.html')
 
 @login_required(login_url='login')
 def about(request):
-    return render(request,'app_templates/about.html')
+    return render(request,'app/pages/about.html')
 
