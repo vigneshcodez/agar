@@ -1,5 +1,8 @@
+
+
 <!-- extending base -->
 {% extends 'app/base/base.html' %}
+{% load static %}
 <!-- title block for html page -->
 {% block title %}
 <title>home page</title>
@@ -9,8 +12,177 @@
 {% endblock metatags %}
 <!-- content block for html page -->
 {% block content %}
-<h1 class="text-3xl bg-[yellow] p-[50px]">this is index page</h1>
-<h1>Welcome, {{ user.email }}!</h1>
-<a href="{% url 'logout' %}">Logout</a>
+<div class="mx-10">
+       <!-- ====== Navbar Section Start -->
+   <header
+   x-data="
+     {
+       navbarOpen: false,
+     }
+   "
+   :class="scrolledFromTop ? 'fixed z-50 bg-white bg-opacity-80 dark:bg-dark shadow-sm backdrop-blur-sm' : 'absolute' "
+   class="left-0 top-0 z-50 w-full"
+ >
+   <div class="container mx-auto">
+     <div class="relative z-40 -mx-4 flex items-center justify-between">
+       <div class="w-60 max-w-full px-4">
+         <a href="javascript:void(0)" class="block w-full py-5">
+            <h1 class="text-3xl font-bold text-primary">Agragara</h1>
+         </a>
+       </div>
+       <div class="flex w-full items-center justify-between px-4">
+         <div>
+           <button
+             @click="navbarOpen = !navbarOpen"
+             :class="navbarOpen && 'navbarTogglerActive'"
+             id="navbarToggler"
+             class="absolute right-4 top-1/2 block -translate-y-1/2 rounded-lg px-3 py-[6px] ring-primary focus:ring-2 lg:hidden"
+           >
+             <span
+               class="relative my-[6px] block h-[2px] w-[30px] bg-body-color"
+             ></span>
+             <span
+               class="relative my-[6px] block h-[2px] w-[30px] bg-body-color"
+             ></span>
+             <span
+               class="relative my-[6px] block h-[2px] w-[30px] bg-body-color"
+             ></span>
+           </button>
+           <nav
+             :class="!navbarOpen && 'hidden' "
+             id="navbarCollapse"
+             class="dark:bg-dark-2 absolute right-4 top-full z-40 w-full max-w-[250px] rounded-lg bg-white px-6 py-5 shadow lg:static lg:block lg:w-full lg:max-w-full lg:bg-transparent lg:shadow-none lg:dark:bg-transparent"
+           >
+             <ul class="blcok lg:flex">
+               <li>
+                 <a
+                   href="javascript:void(0)"
+                   class="dark:text-dark-6 flex py-2 text-base font-medium text-body-color hover:text-dark dark:hover:text-white lg:ml-12 lg:inline-flex"
+                 >
+                   About Us
+                 </a>
+               </li>
+               <li>
+                 <a
+                   href="javascript:void(0)"
+                   class="dark:text-dark-6 flex py-2 text-base font-medium text-body-color hover:text-dark dark:hover:text-white lg:ml-12 lg:inline-flex"
+                 >
+                   Features
+                 </a>
+               </li>
+               <li>
+                 <a
+                   href="javascript:void(0)"
+                   class="dark:text-dark-6 flex py-2 text-base font-medium text-body-color hover:text-dark dark:hover:text-white lg:ml-12 lg:inline-flex"
+                 >
+                   Pricing
+                 </a>
+               </li>
+               <li>
+                 <a
+                   href="javascript:void(0)"
+                   class="dark:text-dark-6 flex py-2 text-base font-medium text-body-color hover:text-dark dark:hover:text-white lg:ml-12 lg:inline-flex"
+                 >
+                   Support
+                 </a>
+               </li>
+             </ul>
+           </nav>
+         </div>
+         <div class="hidden justify-end pr-16 sm:flex lg:pr-0">
+           <a
+             href="javascript:void(0)"
+             class="dark:bg-dark-2 dark:hover:bg-dark-3 rounded-md bg-[black] px-7 py-3 text-base font-medium text-white hover:bg-body-color"
+           >
+             Get Free
+           </a>
+         </div>
+       </div>
+     </div>
+   </div>
+ </header>
+ <!-- ====== Navbar Section End -->
+
+ <!-- ====== Hero Section Start -->
+ <div class="relative pb-[110px] pt-[50px] dark:bg-dark lg:pt-[100px]">
+   <div class="container mx-auto">
+     <div class="-mx-4 flex flex-wrap items-center">
+       <div class="w-full px-4 lg:w-1/2">
+         <div class="mb-12 lg:mb-0">
+           <h2
+             class="mb-5 text-3xl font-bold leading-[1.208] text-dark dark:text-white lg:text-[38px] xl:text-[40px]"
+           >
+             No.1 bramhing platform for your business 
+           </h2>
+           <p
+             class="dark:text-dark-6 mb-8 max-w-[485px] text-base text-body-color"
+           >
+             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam
+             at egestas tortor. Morbi sed odio id purus pellentesque iaculis
+             nulla facilisi.
+           </p>
+
+           <p class="mb-5 text-base font-medium text-dark dark:text-white">
+             Subscribe to get notified when we launch 🎉
+           </p>
+
+           <form class="mb-7 flex max-w-[455px] flex-wrap">
+             <input
+               type="email"
+               class="dark:border-dark-3 dark:bg-dark-2 placeholder:text-dark-6 mb-3 mr-3 h-[52px] w-full rounded-md border border-stroke bg-white px-5 text-base text-body-color outline-none focus:border-primary focus-visible:shadow-none dark:focus:border-primary sm:max-w-[220px] md:max-w-[315px] lg:max-w-[250px] xl:max-w-[300px]"
+               placeholder="Your work mail"
+             />
+             <button
+               class="hover:bg-blue-dark mb-3 h-[52px] rounded-md bg-primary px-7 text-base font-medium text-white transition"
+             >
+               Search
+             </button>
+           </form>
+         </div>
+       </div>
+
+       <div class="w-full px-4 lg:w-1/2">
+         <div class="-mx-2 flex flex-wrap sm:-mx-4">
+           <div class="w-1/2 px-2 sm:px-4">
+             <div
+               class="mb-4 h-[256px] sm:mb-8 sm:h-[442px] lg:h-[332px] xl:h-[442px]"
+             >
+               <img
+                 src="{% static 'images/temple.jpg' %}"
+                 alt="hero image"
+                 class="h-full w-full object-cover object-left"
+               />
+             </div>
+           </div>
+           <div class="w-1/2 px-2 sm:px-4">
+             <div
+               class="mb-4 h-[120px] sm:mb-8 sm:h-[205px] lg:h-[150px] xl:h-[205px]"
+             >
+               <img
+                 src="{% static 'images/chennai.jpg' %}"
+                 alt="hero image"
+                 class="h-full w-full object-cover object-top"
+               />
+             </div>
+             <div
+               class="mb-4 h-[120px] sm:mb-8 sm:h-[205px] lg:h-[150px] xl:h-[205px]"
+             >
+               <img
+                 src="{% static 'images/beach.jpg' %}"
+                 alt="hero image"
+                 class="h-full w-full object-cover object-center"
+               />
+             </div>
+           </div>
+         </div>
+       </div>
+     </div>
+   </div>
+ </div>
+ <!-- ====== Hero Section End -->
+
+  <!--  -->
+
+</div>
 {% endblock content %}
 
