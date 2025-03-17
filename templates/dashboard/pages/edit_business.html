@@ -1,0 +1,20 @@
+{% extends 'dashboard/base/base.html' %}
+{% block title %} <title>Edit Business</title> {% endblock %}
+{% block content %}
+
+<div class="container mx-auto p-6">
+    <h1 class="text-2xl font-bold mb-4">Edit Business</h1>
+
+    <form method="POST" enctype="multipart/form-data" class="bg-white p-6 rounded-lg shadow-md">
+        {% csrf_token %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {{ form.as_p }}
+        </div>
+        <div class="mt-4 flex justify-between">
+            <a href="{% url 'business_list' %}" class="px-4 py-2 bg-gray-300 rounded">Cancel</a>
+            <button type="submit" class="px-4 py-2 bg-green-500 text-white rounded">Update</button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

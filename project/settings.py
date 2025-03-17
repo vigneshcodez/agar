@@ -43,6 +43,7 @@ CUSTOM_APPS = [
     # Custom app
     'accounts',
     'app',
+    'dashboard'
 ]
 
 INSTALLED_APPS = INSTALLED_APPS + CUSTOM_APPS 

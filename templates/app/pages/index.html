@@ -90,12 +90,22 @@
            </nav>
          </div>
          <div class="hidden justify-end pr-16 sm:flex lg:pr-0">
+          {% if user.is_authenticated %}
+
            <a
-             href="javascript:void(0)"
+             href="{% url 'dashboard_index' %}"
              class="dark:bg-dark-2 dark:hover:bg-dark-3 rounded-md bg-[black] px-7 py-3 text-base font-medium text-white hover:bg-body-color"
            >
-             Get Free
+             Dashboard
            </a>
+           {% else %}
+           <a
+             href="{% url 'login' %}"
+             class="dark:bg-dark-2 dark:hover:bg-dark-3 rounded-md bg-[black] px-7 py-3 text-base font-medium text-white hover:bg-body-color"
+           >
+             Login
+           </a>
+           {% endif %}
          </div>
        </div>
      </div>
